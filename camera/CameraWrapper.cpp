@@ -113,6 +113,13 @@ static int check_vendor_module()
     return rv;
 }
 
+static bool is4k(android::CameraParameters &params) {
+    int video_width, video_height;
+    params.getVideoSize(&video_width, &video_height);
+
+    return video_width*video_height > 1920*1080;
+}
+
 static char *camera_fixup_getparams(int id, const char *settings)
 {
     bool videoMode = false;
@@ -146,6 +153,10 @@ static char *camera_fixup_getparams(int id, const char *settings)
         free(manipBuf);
     }
 
+    if (id == 0 && is4k(params)) {
+        params.set("preview-format", "yuv420sp");
+    }
+
     /* LIE! The camera will set 3 snaps when doing HDR, and only return one. This hangs apps
      * that wait for the rest to come in. Make sure we never return multiple snaps unless
      * doing ZSL */
@@ -175,6 +186,8 @@ static char *camera_fixup_setparams(int id, const char *settings)
     ALOGV("%s: original parameters:", __FUNCTION__);
     params.dump();
 #endif
+
+    params.set(android::CameraParameters::KEY_LGE_CAMERA, (id == 0 && is4k(params)) ? "1" : "0");
 
     if (params.get(android::CameraParameters::KEY_RECORDING_HINT)) {
         videoMode = (!strcmp(params.get(android::CameraParameters::KEY_RECORDING_HINT), "true"));
@@ -326,6 +339,8 @@ static int camera_store_meta_data_in_buffers(struct camera_device *device,
     return VENDOR_CALL(device, store_meta_data_in_buffers, enable);
 }
 
+static char *camera_get_parameters(struct camera_device *device);
+static int camera_set_parameters(struct camera_device *device, const char *params);
 static int camera_start_recording(struct camera_device *device)
 {
     ALOGV("%s->%08X->%08X", __FUNCTION__, (uintptr_t)device,
@@ -333,6 +348,17 @@ static int camera_start_recording(struct camera_device *device)
 
     if (!device)
         return EINVAL;
+
+    android::CameraParameters parameters;
+    parameters.unflatten(android::String8(camera_get_parameters(device)));
+    if (CAMERA_ID(device) == 0 && is4k(parameters)) {
+        parameters.set("preview-format", "nv12-venus");
+    }
+    camera_set_parameters(device, strdup(parameters.flatten().string()));
+
+    android::CameraParameters parameters2;
+    parameters2.unflatten(android::String8(VENDOR_CALL(device, get_parameters)));
+    parameters2.dump();
 
     return VENDOR_CALL(device, start_recording);
 }

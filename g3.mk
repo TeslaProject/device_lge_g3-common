@@ -54,7 +54,7 @@ PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
     persist.sys.usb.config=mtp
 
 # Screen density
-PRODUCT_AAPT_CONFIG := normal hdpi xhdpi xxhdpi 560dpi xxxhdpi
+PRODUCT_AAPT_CONFIG := normal
 PRODUCT_AAPT_PREF_CONFIG := 560dpi
 
 # Boot animation
@@ -183,6 +183,10 @@ PRODUCT_BOOT_JARS += \
 PRODUCT_PACKAGES += \
     power.msm8974
 
+# Radio
+PRODUCT_PACKAGES += \
+    libxml2
+
 # Ramdisk
 PRODUCT_PACKAGES += \
     fstab.g3 \
@@ -190,7 +194,6 @@ PRODUCT_PACKAGES += \
     init.g3.usb.rc \
     init.g3.usb.sh \
     init.galbi.class_core.sh \
-    init.galbi.class_main.sh \
     init.galbi.early_boot.sh \
     init.galbi-sensor.sh \
     init.galbi.sh \
@@ -200,6 +203,10 @@ PRODUCT_PACKAGES += \
 
 PRODUCT_PACKAGES += \
     init.galbi.thermal_conf.sh
+
+# Thermal
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/configs/thermal-engine-8974.conf:system/etc/thermal-engine-8974.conf
 
 # USB
 PRODUCT_PACKAGES += \
